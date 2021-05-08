@@ -63,10 +63,10 @@ def gitQuery():
     limit = req.headers["X-RateLimit-Limit"] if "X-RateLimit-Limit" in req.headers else ""
     remain = req.headers["X-RateLimit-Remaining"] if "X-RateLimit-Remaining" in req.headers else None
     resetat = req.headers["X-RateLimit-Reset"] if "X-RateLimit-Reset" in req.headers else None
-    if remain != None and int(remain) < 10:
+    if remain != None and int(remain) < 5:
         limitText = "(of {})".format(limit) if limit != None else ""
         resetText = " Resets at {}".format(datetime.datetime.fromtimestamp(float(resetat))) if resetat != None else ""
-        print("WARNING: {}{} queries remaining before rate limit hit.{}".format(remain, limitText, resetText))
+        print("WARNING: {} {} queries remaining before rate limit hit.{}".format(remain, limitText, resetText))
     if req.ok:
         return req.json()
     else:
@@ -81,7 +81,7 @@ if __name__ == "__main__":
     try:
         token = open(tokenFile, 'r').read()[:40]
         if not os.path.isdir(bpath):
-            os.mkdir(bpath, 0770)
+            os.mkdir(bpath, 0o770)
     except Exception as e:
         print(e)
         print("\n\nPaste your authorization token (API key) into file: '{}'".format(tokenFile))
@@ -97,8 +97,6 @@ if __name__ == "__main__":
     args["keyword"] = args["keyword"].replace('"', '')
     rexchk = re.compile(r'(%s)|(%s)' % (args["domain.tld"], args["keyword"]), re.IGNORECASE)
     datecheck = None
-    filelist = open('{}_{}_{}_fileurls.txt'.format(args["domain.tld"], args["keyword"], runtime), 'w+')
-    matchlist = open('{}_{}_{}_matches.txt'.format(args["domain.tld"], args["keyword"], runtime), 'w+')
 
     if len(args["date"]) > 1:
         try:
@@ -116,6 +114,8 @@ if __name__ == "__main__":
     if "total_count" in results:
         gitTotal = results["total_count"]
     if "items" in results:
+        filelist = open('{}_{}_{}_fileurls.txt'.format(args["domain.tld"], args["keyword"], runtime), 'w+')
+        matchlist = open('{}_{}_{}_matches.txt'.format(args["domain.tld"], args["keyword"], runtime), 'w+')
         for entry in results['items']:
             fn = '{}/{}'.format(entry['repository']['full_name'].encode('utf-8'), entry['path'].encode('utf-8'))
             rawfile = entry['html_url'].replace('//github.com', '//raw.githubusercontent.com').replace('/blob/', '/')
@@ -146,7 +146,7 @@ if __name__ == "__main__":
                     prevline = line+"\n"
                 print('---+++---+++---+++---+++---+++---+++---+\n\n')
         print("Total items -- in GitHub: {} , Returned: {}".format(gitTotal, len(results["items"])))
+        matchlist.close()
+        filelist.close()
     else:
         print("No items returned. (Likely a request failure)")
-    matchlist.close()
-    filelist.close()
